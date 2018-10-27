@@ -1,7 +1,7 @@
 /**
- * 超星尔雅全自动播放视频脚本V1.0
+ * 超星尔雅全自动播放视频脚本V1.0.1
  * 版权声明及脚本更新见：https://github.com/dzj0821/ChaoXingAutoPlayVideo
- * 功能：全自动后台播放视频（暂不支持一个页面多个视频的情况）
+ * 功能：全自动后台播放视频（暂不支持一个页面多个视频的情况），自动跳过答题，自动跳过章节测验（只是跳过，还需要手动回答）
  * 初次使用时：请根据自身情况调整配置信息内容
  * 使用方法：在非IE浏览器上按F12打开控制台（Console），将此脚本所有内容粘贴上去按回车即可。
  */
@@ -15,7 +15,7 @@ var check_time = 1000;
 //页面跳转时多少毫秒后继续执行脚本（页面完全加载的时间，设置过小脚本出出错）
 var wait_time = 3000;
 //指定从第几个视频开始刷（从0开始）
-var play_num = 37;
+var play_num = 0;
 //配置信息结束
 
 var course_num = 0;
@@ -30,8 +30,8 @@ function get_course_list(){
         }
         else{
             sourse_list[i][0] = false;
-            sourse_list[i][1] = $($(".ncells")[i]).children("a")[0];
         }
+        sourse_list[i][1] = $($(".ncells")[i]).children("a")[0];
     }
 }
 
@@ -40,7 +40,7 @@ function find_next(){
         if(i == course_num){
             return false;
         }
-        if(sourse_list[i][1] != undefined){
+        if(!sourse_list[i][0]){
             play_num = i;
             return true;
         }
@@ -63,7 +63,7 @@ function play_next(){
                 if($("iframe").contents().find(".ans-job-finished").length != 0){
                     //这个视频刷过了，下一个
                     console.log("这个视频刷过了，跳过");
-                    sourse_list[play_num] = true;
+                    sourse_list[play_num][0] = true;
                     play_next();
                 }
                 else{
@@ -74,7 +74,7 @@ function play_next(){
         else{
             //就是没有，下一个
             console.log("这个章节没有视频，跳过");
-            sourse_list[play_num] = true;
+            sourse_list[play_num][0] = true;
             play_next();
         }
     }, wait_time);
@@ -88,18 +88,27 @@ function play_media(){
     if(use_external_network){
         $("iframe").contents().find("iframe").contents().find('video#video_html5_api')[0].src = $("iframe").contents().find("iframe").contents().find('video#video_html5_api')[0].src.replace("210.45.160.103/", "");
     }
-    setInterval(function(){
+    var interval = setInterval(function(){
         var palyer = $("iframe").contents().find("iframe").contents().find('video#video_html5_api')[0];
         if(palyer == undefined){
             return;
         }
         if(palyer.ended){
-            sourse_list[play_num] = true;
+            sourse_list[play_num][0] = true;
+            clearInterval(interval);
             play_next();
             return;
         }
         if(palyer.paused){
-            palyer.play();
+            try{
+                palyer.play();
+            }
+            catch(e){
+                if(use_external_network){
+                    player.src = player.src.replace("210.45.160.103/", "");
+                }
+            }
+            
         }
     }, check_time);
 }

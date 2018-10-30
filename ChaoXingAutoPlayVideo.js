@@ -1,5 +1,5 @@
 /**
- * 超星尔雅全自动播放视频脚本V1.0.1
+ * 超星尔雅全自动播放视频脚本V1.0.2
  * 版权声明及脚本更新见：https://github.com/dzj0821/ChaoXingAutoPlayVideo
  * 功能：全自动后台播放视频（暂不支持一个页面多个视频的情况），自动跳过答题，自动跳过章节测验（只是跳过，还需要手动回答）
  * 初次使用时：请根据自身情况调整配置信息内容
@@ -16,6 +16,10 @@ var check_time = 1000;
 var wait_time = 3000;
 //指定从第几个视频开始刷（从0开始）
 var play_num = 0;
+//如果一个页面剩余任务数为1，是否跳过（比如只剩章节测验没做），开启后可减少无意义页面跳转次数，但可能漏看视频
+var jump_one_task = true;
+//校园网超星服务器域名IP（如：127.0.0.1/）
+var internal_server_ip = "127.0.0.1/"
 //配置信息结束
 
 var course_num = 0;
@@ -29,7 +33,12 @@ function get_course_list(){
             sourse_list[i][0] = true;
         }
         else{
-            sourse_list[i][0] = false;
+            if(jump_one_task && $($(".ncells")[i]).children("a").children().children(".orange01").text() == "1"){
+                sourse_list[i][0] = true;
+            }
+            else{
+                sourse_list[i][0] = false;
+            }
         }
         sourse_list[i][1] = $($(".ncells")[i]).children("a")[0];
     }
@@ -86,29 +95,24 @@ function play_media(){
         $("iframe").contents().find("iframe").contents().find('video#video_html5_api')[0].muted = true;
     }
     if(use_external_network){
-        $("iframe").contents().find("iframe").contents().find('video#video_html5_api')[0].src = $("iframe").contents().find("iframe").contents().find('video#video_html5_api')[0].src.replace("210.45.160.103/", "");
+        $("iframe").contents().find("iframe").contents().find('video#video_html5_api')[0].src = $("iframe").contents().find("iframe").contents().find('video#video_html5_api')[0].src.replace(internal_server_ip, "");
     }
     var interval = setInterval(function(){
-        var palyer = $("iframe").contents().find("iframe").contents().find('video#video_html5_api')[0];
-        if(palyer == undefined){
+        var player = $("iframe").contents().find("iframe").contents().find('video#video_html5_api')[0];
+        if(player == undefined){
             return;
         }
-        if(palyer.ended){
+        if(player.ended){
             sourse_list[play_num][0] = true;
             clearInterval(interval);
             play_next();
             return;
         }
-        if(palyer.paused){
-            try{
-                palyer.play();
+        if(player.paused){
+            if(use_external_network && player.src != player.src.replace(internal_server_ip, "")){
+                player.src = player.src.replace(internal_server_ip, "");
             }
-            catch(e){
-                if(use_external_network){
-                    player.src = player.src.replace("210.45.160.103/", "");
-                }
-            }
-            
+            player.play();
         }
     }, check_time);
 }

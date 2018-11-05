@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ChaoXingAutoWriteQuestions
 // @namespace    dzj0821
-// @version      1.0
+// @version      1.0.1
 // @description  超星尔雅全自动查题写题脚本
 // @author       dzj0821
 // @match        *://*.chaoxing.com/mycourse/studentstudy*
@@ -12,7 +12,6 @@
 // ==/UserScript==
 
 /**
- * 超星尔雅全自动查题写题脚本V.0.0
  * 版权声明及脚本更新见：https://github.com/dzj0821/ChaoXingAutoPlayVideo
  * 功能：全自动答题，答案从https://www.zhengjie.com 搜索得出，正确率很高，自动答下一章题目
  * 注意：由于需要跨域访问其他网站搜索答案，所以需要GM_xmlhttpRequest权限，警告时选择允许域名即可。
@@ -20,12 +19,13 @@
  * 使用说明：在油猴菜单点 开始自动答题 即可。
  */
 //配置信息开始，使用按需修改
-//每隔多少毫秒答一次题（最少5分钟）
-var check_time = 5 * 60 * 1000;
+//每隔多少毫秒答一次题（最少5分钟, 分别是最小值和最大值，防止固定时间被查）
+var check_time_min = 5 * 60 * 1000;
+var check_time_max = 6 * 60 * 1000;
 //页面跳转时多少毫秒后继续执行脚本（页面完全加载的时间，设置过小脚本会出错）
 var wait_time = 3000;
 //每道题查询间隔多少毫秒，过低可能会查询异常
-var search_wait_time = 1000;
+var search_wait_time = 5000;
 //指定从第几章开始刷（从0开始）
 var play_num = 0;
 //是否只检查任务数为1的章节
@@ -110,6 +110,7 @@ function write_questions(){
         if(form_array[i].name.indexOf("answertype") != -1){
             questions_id[questions_id.length] = form_array[i].name.replace("type", "");
             questions_types[questions_types.length] = form_array[i].value;
+            console.log("第" + (questions_types.length - 1) + "个题目id：" + questions_id[questions_id.length - 1] + "，题目类型：" + questions_types[questions_types.length - 1]);
         }
     }
     //获取所有题目标题
@@ -117,6 +118,7 @@ function write_questions(){
     var temp = questions_frame.find("i.fl").parent().children('div');
     for(var i = 0; i < temp.length; i++){
         question_text[i] = $(temp[i]).text();
+        console.log("第" + i + "个题目标题：" + question_text[i]);
     }
     //验证一下
     if(questions_types.length != question_text.length){
@@ -131,16 +133,19 @@ function write_questions(){
         switch(questions_types[i]){
             //单选
             case "0":
+                console.log("第" + i + "个题目是单选题");
                 for(var j = 0; j < temp.length; j++){
                     questions_options[i][j] = new Array();
                     //button存input按钮方便后面点击
                     questions_options[i][j]['button'] = $(temp[j]);
                     //text存选项文字，格式如A. 选项1
                     questions_options[i][j]['text'] = $(temp[j]).val() + ". " + $(temp.parent().parent().children("a")[j]).text();
+                    console.log("第" + i + "个题目的第" + j + "个选项是" + questions_options[i][j]['text']);
                 }
                 break;
             //对错
             case "3":
+                console.log("第" + i + "个题目是判断题");
                 questions_options[i][0] = new Array();
                 questions_options[i][0]['button'] = $(temp[0]);
                 questions_options[i][0]['text'] = "√";
@@ -163,27 +168,41 @@ function write_questions(){
                    var search_html = $(response.responseText);
                    var answer_list = search_html.find("li.resource.question");
                    if(answer_list.length == 0){
-                       console.log("未查询到结果，可能出现异常");
-                       return;
+                        alert("未查询到结果，可能出现异常");
+                        throw new Error("未查询到结果，可能出现异常");
                    }
-
+                   var question_index = 0;
+                   var question_sim = 0;
+                   for(var k = 0; k < answer_list.length; k++){
+                       var title = $(answer_list.find(".resource_title")[k]).text();
+                       var sim = string_same(title, question_text[j]);
+                       console.log("第" + j + "个题目的第" + k + "个查询结果，题目为" + title + "，与需要查询的题目相似度为" + sim);
+                       if(question_sim < sim){
+                           question_index = k;
+                           question_sim = sim;
+                       }
+                   }
+                   console.log("第" + question_index + "个查询结果相似度最高，开始获取答案");
                    GM_xmlhttpRequest({
                     method: "GET",
-                    url : "http://www.zhengjie.com/" + $(answer_list.children("a")[0]).attr("href"),
+                    //每题有两个a标签，需要*2
+                    url : "http://www.zhengjie.com/" + $(answer_list.children("a")[question_index * 2]).attr("href"),
                     onload : function (response) {
                         var answer_html = $(response.responseText);
                         var result = $(answer_html.find(".resource.answer").find(".resource_content.long").children()[1]).text();
-                        console.log(result);
+                        console.log("答案为：" + result);
                         var result_index = 0;
                         var result_sim = 0;
                         //找到相似度最高的
                         for(var k = 0; k < questions_options[j].length; k++){
                             var sim = string_same(questions_options[j][k]['text'], result);
+                            console.log("第" + k + "个选项为" + questions_options[j][k]['text'] + "，与查询答案相似度为" + sim);
                             if(result_sim < sim){
                                 result_sim = sim;
                                 result_index = k;
                             }
                         }
+                        console.log("选择第" + result_index + "个选项");
                         questions_options[j][result_index]['button'].click();
                     }
                 });
@@ -202,6 +221,7 @@ function write_questions(){
             var temp_elm = $(temp[q]);
             if(temp_elm.text() == "提交作业"){
                 temp_elm.click();
+                var random_time = Math.floor(Math.random()*(check_time_max - check_time_min + 1)) + check_time_min;
                 setTimeout(function(){
                     if($("AlertCon02").length != 0 || questions_frame.find("#confirmSubWin").css("display") != "block"){
                         alert("疑似出现验证码，脚本停止运行！请尝试调高check_time数值");
@@ -211,7 +231,7 @@ function write_questions(){
                     setTimeout(function(){
                         sourse_list[play_num][0] = true;
                         write_next();
-                    }, check_time);
+                    }, random_time);
                 }, wait_time);
                 return;
             }

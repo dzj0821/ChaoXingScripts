@@ -22,4 +22,4 @@
 
 `初次使用时请根据自身情况调整配置信息内容`
 
-使用方法：浏览器需要提前安装https://tampermonkey.net/，然后点击图标，新建脚本，将脚本粘贴并保存，随后打开学习页面，确认URL为*.chaoxing.com/mycourse/studentstudy*形式，点击图标，点击开始自动答题即可。
+使用方法：浏览器需要提前安装 https://tampermonkey.net/ ，然后点击图标，新建脚本，将脚本粘贴并保存，随后打开学习页面，确认URL为*.chaoxing.com/mycourse/studentstudy*形式，点击图标，点击开始自动答题即可。

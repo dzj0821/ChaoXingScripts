@@ -14,7 +14,7 @@
 # ChaoXingAutoWriteQuestions
 超星尔雅全自动答题脚本
 
-答案从https://www.zhengjie.com得到，此脚本正确率较低，如果为了分数慎用
+答案从 https://www.zhengjie.com 得到，此脚本正确率较低，如果为了分数慎用
 
 仅支持单选题和判断题，遇到其他提醒会报错并停止
 

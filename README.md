@@ -11,6 +11,8 @@
 
 使用方法：首先确认URL为*.chaoxing.com/mycourse/studentstudy*形式，然后在非IE浏览器上按F12打开控制台（Console），将此脚本所有内容粘贴上去按回车即可。
 
+
+
 # ChaoXingAutoWriteQuestions
 超星尔雅全自动答题脚本
 

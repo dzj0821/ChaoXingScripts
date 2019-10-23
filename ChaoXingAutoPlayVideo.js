@@ -39,23 +39,26 @@ function get_course_list(){
     for(var i = 0; i < course_num; i++){
         sourse_list[i] = new Array();
         //获取那个绿色小点判断是否刷完
-        if($($(".ncells")[i]).children("a").children().children(".blue").length == 1){
+        if($($(".ncells")[i]).children("h4").children(".blue").length == 1){
             sourse_list[i][0] = true;
             console.log("第" + i + "个章节的状态为：已完成")
         }
         else{
-            var task_num = $($(".ncells")[i]).children("a").children().children(".orange01").text();
-            if(jump_one_task && task_num == "1"){
+            var task_num = $($(".ncells")[i]).children("h4").children(".orange01").text();
+			if (task_num == "") {
+				sourse_list[i][0] = true;
+                console.log("第" + i + "个章节没有任务");
+			} else if (jump_one_task && task_num == "1"){
                 sourse_list[i][0] = true;
                 console.log("第" + i + "个章节的任务数为：1， 但因为开启了jump_one_task选项被跳过了");
             }
-            else{
+            else {
                 console.log("第" + i + "个章节的任务数为：" + task_num + "，等待播放");
                 sourse_list[i][0] = false;
             }
         }
         //保存a标签，方便后续点击
-        sourse_list[i][1] = $($(".ncells")[i]).children("a")[0];
+        sourse_list[i][1] = $($(".ncells")[i]).children("h4").children("a")[0];
     }
 }
 
